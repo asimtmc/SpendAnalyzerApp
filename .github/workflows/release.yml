@@ -14,16 +14,27 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Set up JDK 11
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         java-version: '11'
         distribution: 'temurin'
 
     - name: Setup Android SDK
       uses: android-actions/setup-android@v3
+      with:
+        cmdline-tools-version: 9477386
+        
+    - name: Accept Android SDK licenses
+      run: yes | sdkmanager --licenses
+
+    - name: Install Android SDK components
+      run: |
+        sdkmanager "platforms;android-33"
+        sdkmanager "build-tools;30.0.3"
+        sdkmanager "platform-tools"
 
     - name: Cache Gradle packages
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.gradle/caches
@@ -41,21 +52,12 @@ jobs:
 
     - name: Create Release
       id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v1
       with:
-        tag_name: ${{ github.ref }}
-        release_name: Release ${{ github.ref }}
+        files: SpendAnalyzerApp/app/build/outputs/apk/release/app-release-unsigned.apk
+        tag_name: ${{ github.ref_name }}
+        name: Release ${{ github.ref_name }}
         draft: false
         prerelease: false
-
-    - name: Upload Release APK
-      uses: actions/upload-release-asset@v1
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: SpendAnalyzerApp/app/build/outputs/apk/release/app-release-unsigned.apk
-        asset_name: SpendAnalyzerApp-release.apk
-        asset_content_type: application/vnd.android.package-archive
